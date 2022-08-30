@@ -9,7 +9,7 @@ if __name__ == '__main__':
     dataset = Dataset(path)
 
     checkpoints_dir = 'checkpoints/'
-    name = 'exp'
+    name = 'exp_5'
 
     expr_dir = os.path.join(checkpoints_dir, name)
 

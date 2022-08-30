@@ -121,10 +121,10 @@ class Model(object):
                 segmentation_mask_decoded = decode_segmentation(tensorboard_images[1])
                 fake_segmentation_mask_decoded = decode_segmentation(tensorboard_images[2])
 
-                tensorboard_writer.add_image('CT', ct, epoch, epoch_iter / self.batch_size, 'HW')
-                tensorboard_writer.add_image('segmentation_mask', segmentation_mask_decoded, epoch,
+                tensorboard_writer.add_image('CT_train', ct, epoch, epoch_iter / self.batch_size, 'HW')
+                tensorboard_writer.add_image('segmentation_mask_train', segmentation_mask_decoded, epoch,
                                              epoch_iter / self.batch_size, 'HWC')
-                tensorboard_writer.add_image('fake_segmentation_mask', fake_segmentation_mask_decoded, epoch,
+                tensorboard_writer.add_image('fake_segmentation_mask_train', fake_segmentation_mask_decoded, epoch,
                                              epoch_iter / self.batch_size, 'HWC')
 
             if epoch % self.save_epoch_freq == 0:
@@ -148,6 +148,21 @@ class Model(object):
                           test_loss
                           )
                 tensorboard_writer.add_scalars('Loss', {'test': test_loss}, total_steps)
+
+                visuals = OrderedDict([('ct', ct.data),
+                                       ('segmentation_mask', mask.data),
+                                       ('fake_segmentation_mask', fake_segmentation.data)
+                                       ])
+                tensorboard_images = visualize_training(visuals)
+                ct = tensorboard_images[0]
+                segmentation_mask_decoded = decode_segmentation(tensorboard_images[1])
+                fake_segmentation_mask_decoded = decode_segmentation(tensorboard_images[2])
+
+                tensorboard_writer.add_image('CT_test', ct, epoch, epoch_iter / self.batch_size, 'HW')
+                tensorboard_writer.add_image('segmentation_mask_test', segmentation_mask_decoded, epoch,
+                                             epoch_iter / self.batch_size, 'HWC')
+                tensorboard_writer.add_image('fake_segmentation_mask_test', fake_segmentation_mask_decoded, epoch,
+                                             epoch_iter / self.batch_size, 'HWC')
 
             print_log(out_f, 'End of epoch %d / %d \t Time Taken: %d sec' %
                       (epoch, self.niter + self.niter_decay, time.time() - epoch_start_time))
