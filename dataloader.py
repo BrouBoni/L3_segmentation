@@ -41,6 +41,7 @@ class Dataset:
 
         self.training_transform = tio.Compose([
             tio.ToCanonical(),
+            tio.RemapLabels({0: 0, 64: 1, 128: 2, 191: 3, 255: 4}),
             tio.RandomFlip(p=0.5),
             tio.Clamp(out_min=-500, out_max=500),
             tio.RescaleIntensity(out_min_max=(0, 1), in_min_max=(-500, 500)),
@@ -50,6 +51,7 @@ class Dataset:
 
         self.test_transform = tio.Compose([
             tio.ToCanonical(),
+            tio.RemapLabels({0: 0, 64: 1, 128: 2, 191: 3, 255: 4}),
             tio.Clamp(out_min=-500, out_max=500),
             tio.RescaleIntensity(out_min_max=(0, 1), in_min_max=(-500, 500)),
             tio.OneHot(5),
