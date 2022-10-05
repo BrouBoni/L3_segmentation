@@ -34,12 +34,12 @@ def random_split(subjects, ratio=0.9):
 
 
 class Dataset:
-    def __init__(self, path, ratio=0.9, batch_size=1):
+    def __init__(self, path, ratio=0.9, batch_size=1, pretraining=False):
         self.path = path
 
         self.batch_size = batch_size
 
-        self.training_transform = tio.Compose([
+        training_transform_pepita = tio.Compose([
             tio.ToCanonical(),
             tio.RemapLabels({0: 0, 64: 1, 128: 2, 191: 3, 255: 4}),
             tio.RandomFlip(p=0.5),
@@ -49,9 +49,25 @@ class Dataset:
             tio.OneHot(5),
         ])
 
-        self.test_transform = tio.Compose([
+        test_transform_pepita = tio.Compose([
             tio.ToCanonical(),
-            tio.RemapLabels({0: 0, 64: 1, 128: 2, 191: 3, 255: 4}),
+            tio.RemapLabels({0: 3, 64: 2, 128: 1, 191: 4, 255: 0}),
+            tio.Clamp(out_min=-500, out_max=500),
+            tio.RescaleIntensity(out_min_max=(0, 1), in_min_max=(-500, 500)),
+            tio.OneHot(5),
+        ])
+
+        training_transform_local = tio.Compose([
+            tio.ToCanonical(),
+            tio.RandomFlip(p=0.5),
+            tio.Clamp(out_min=-500, out_max=500),
+            tio.RescaleIntensity(out_min_max=(0, 1), in_min_max=(-500, 500)),
+            tio.RandomAffine(scales=(0.9, 1.2), degrees=15, p=0.5),
+            tio.OneHot(5),
+        ])
+
+        test_transform_local = tio.Compose([
+            tio.ToCanonical(),
             tio.Clamp(out_min=-500, out_max=500),
             tio.RescaleIntensity(out_min_max=(0, 1), in_min_max=(-500, 500)),
             tio.OneHot(5),
@@ -59,6 +75,14 @@ class Dataset:
 
         self.subjects = get_subjects(self.path)
         self.training_subjects, self.test_subjects = random_split(self.subjects, ratio)
+
+        if pretraining:
+            self.training_transform = training_transform_pepita
+            self.test_transform = test_transform_pepita
+
+        else:
+            self.training_transform = training_transform_local
+            self.test_transform = test_transform_local
 
         self.training_set = tio.SubjectsDataset(
             self.training_subjects, transform=self.training_transform)
@@ -76,7 +100,7 @@ class Dataset:
 
         test_loader = torch.utils.data.DataLoader(
             self.test_set, batch_size=self.batch_size,
-            drop_last=True)
+            drop_last=True, shuffle=True)
 
         print('Training set:', len(self.training_set), 'subjects')
         print('Test set:', len(self.test_set), 'subjects')

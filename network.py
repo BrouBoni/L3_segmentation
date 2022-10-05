@@ -51,7 +51,6 @@ class ResnetGenerator(nn.Module):
     def __init__(self, input_nc, output_nc, ngf=64, n_blocks=9,
                  norm_layer=functools.partial(nn.BatchNorm2d, affine=True),
                  use_dropout=False):
-
         super(ResnetGenerator, self).__init__()
 
         model = [
@@ -85,14 +84,15 @@ class ResnetGenerator(nn.Module):
             nn.Conv2d(2 * ngf, ngf, kernel_size=3, padding=1, bias=True),
             norm_layer(ngf),
             nn.ReLU(True),
-
-            nn.Conv2d(ngf, output_nc, kernel_size=7, padding=3),
         ]
 
         self.model = nn.Sequential(*model)
+        self.conv_segmentation = nn.Conv2d(ngf, output_nc, kernel_size=7, padding=3)
 
     def forward(self, x):
-        return self.model(x)
+        x = self.model(x)
+        x = self.conv_segmentation(x)
+        return x
 
     def __str__(self):
         return "ResnetGenerator"

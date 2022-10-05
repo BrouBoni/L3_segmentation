@@ -27,7 +27,7 @@ def rgb2label(path):
 
 if __name__ == '__main__':
 
-    path = "/home/brouboni/PycharmProjects/L3_segmentation/dataset_new/"
+    path = "/home/nicoc/Documents/L3_segmentation/data/dataset_adults"
 
     raw_files = natsorted(glob(os.path.join(path, 'data*')))
     m_files = natsorted(glob(os.path.join(path, 'M_*')))

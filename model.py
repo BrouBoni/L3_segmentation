@@ -6,6 +6,7 @@ from datetime import datetime
 
 import numpy as np
 import torch
+import torch.nn as nn
 import torchio as tio
 from torch.utils.tensorboard import SummaryWriter
 
@@ -16,7 +17,7 @@ from util import print_log, format_train_log, visualize_training, decode_segment
 class Model(object):
     def __init__(self, expr_dir, seed=None, batch_size=None,
                  epoch_count=1, niter=150, niter_decay=50, beta1=0.5, lr=0.0002,
-                 ngf=64, n_blocks=9, input_nc=1, use_dropout=True, norm='batch', max_grad_norm=500.,
+                 ngf=64, n_blocks=9, input_nc=1, output_nc=5, use_dropout=True, norm='batch', max_grad_norm=500.,
                  monitor_grad_norm=True, save_epoch_freq=5, print_freq=15, display_epoch_freq=1, testing=False,
                  resume=False):
 
@@ -35,7 +36,7 @@ class Model(object):
         self.ngf = ngf
         self.n_blocks = n_blocks
         self.input_nc = input_nc
-        self.output_nc = 5
+        self.output_nc = output_nc
         self.use_dropout = use_dropout
         self.norm = norm
         self.max_grad_norm = max_grad_norm
@@ -57,6 +58,8 @@ class Model(object):
 
         self.loss = torch.nn.CrossEntropyLoss()
 
+        self.resume = resume
+
         if not os.path.exists(expr_dir):
             os.makedirs(expr_dir)
 
@@ -72,6 +75,7 @@ class Model(object):
 
         if resume:
             self.load(os.path.join(self.expr_dir, "latest"), True)
+            self.netG.to(self.device)
 
     def train(self, train_dataset, test_set):
         self.batch_size = train_dataset.batch_size
@@ -130,7 +134,10 @@ class Model(object):
             if epoch % self.save_epoch_freq == 0:
                 print_log(out_f, 'saving the model at the end of epoch %d, iterations %d' %
                           (epoch, total_steps))
-                self.save('latest')
+                if not self.resume:
+                    self.save('latest')
+                else:
+                    self.save('latest_resume')
 
                 self.netG.eval()
                 total_loss = 0
@@ -213,6 +220,7 @@ class Model(object):
     def load(self, checkpoint_path, optimizer=False):
         checkpoint = torch.load(checkpoint_path)
         self.netG.load_state_dict(checkpoint['netG'])
+        self.netG.conv_segmentation = nn.Conv2d(self.ngf, self.output_nc, kernel_size=7, padding=3)
 
         if optimizer:
             self.optimizer_G.load_state_dict(checkpoint['optimizer_G'])
